@@ -17,14 +17,14 @@ const config: Config = {
   url: "https://andreyroztorguev.github.io",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: "/outscalelab-blog/",
+  baseUrl: "outscalelab-blog",
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: "AndreyRoztorguev", // Usually your GitHub org/user name.
   projectName: "outscalelab-blog", // Usually your repo name.
-
   deploymentBranch: "gh-pages",
+  trailingSlash: false,
 
   onBrokenLinks: "throw",
 
