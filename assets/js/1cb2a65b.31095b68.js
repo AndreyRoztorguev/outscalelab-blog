@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmy_website=self.webpackChunkmy_website||[]).push([[2339],{8905:e=>{e.exports=JSON.parse('{"metadata":{"permalink":"/outscalelab-blog/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":7,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);

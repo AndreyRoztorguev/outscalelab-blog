@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="rss.xsl"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>OutScaleLab Blog</title>
+        <link>https://andreyroztorguev.github.io/outscalelab-blog/blog</link>
+        <description>OutScaleLab Blog</description>
+        <lastBuildDate>Mon, 06 Oct 2025 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <item>
+            <title><![CDATA[How to Deploy App to AWS EC2 with Nginx]]></title>
+            <link>https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy</link>
+            <guid>https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy</guid>
+            <pubDate>Mon, 06 Oct 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[Nginx logo]]></description>
+            <content:encoded><![CDATA[<p><img decoding="async" loading="lazy" src="https://miro.medium.com/0*mjG1YdoT7xPcnznN.jpg" alt="Nginx logo" class="img_ev3q"></p>
+<p>Deploying a front-end application to AWS EC2 gives you full control over your hosting environment. This guide walks you through the entire process — from launching an instance to serving your app via Nginx.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="prerequisites">Prerequisites<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#prerequisites" class="hash-link" aria-label="Direct link to Prerequisites" title="Direct link to Prerequisites" translate="no">​</a></h2>
+<p>Before starting, make sure you have:</p>
+<ul>
+<li>An AWS account</li>
+<li>A built front-end app (React, Vite, Next.js, etc.)</li>
+<li>Basic knowledge of the terminal</li>
+<li>SSH access to your EC2 instance</li>
+<li>Nginx installed (we’ll cover that below)</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="launch-an-ec2-instance">Launch an EC2 Instance<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#launch-an-ec2-instance" class="hash-link" aria-label="Direct link to Launch an EC2 Instance" title="Direct link to Launch an EC2 Instance" translate="no">​</a></h2>
+<ul>
+<li>Go to the AWS EC2 Console</li>
+<li>Click Launch Instance</li>
+<li>Choose an Amazon Machine Image (AMI) — e.g., Amazon Linux 2 or Ubuntu.</li>
+<li>Choose an instance type (e.g., t2.micro for testing).</li>
+<li>Configure:<!-- -->
+<ul>
+<li>Security group:<!-- -->
+<ul>
+<li>Allow inbound traffic on ports 22 (SSH) and 80 (HTTP).</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Launch and download your .pem key.</li>
+</ul>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="connect-to-ec2-via-ssh">Connect to EC2 via SSH<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#connect-to-ec2-via-ssh" class="hash-link" aria-label="Direct link to Connect to EC2 via SSH" title="Direct link to Connect to EC2 via SSH" translate="no">​</a></h3>
+<ul>
+<li>From your local terminal, navigate to the directory with your .pem key and connect:</li>
+</ul>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">chmod 400 my-key.pem</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">ssh -i my-key.pem ec2-user@&lt;your-ec2-public-ip&gt;</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="install-dependencies">Install Dependencies<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#install-dependencies" class="hash-link" aria-label="Direct link to Install Dependencies" title="Direct link to Install Dependencies" translate="no">​</a></h3>
+<p>Once connected, update packages and install Node.js, npm, and Nginx:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">sudo apt update -y &amp;&amp; sudo apt upgrade -y</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo apt install -y nodejs npm nginx</span><br></span></code></pre></div></div>
+<h3 class="anchor anchorWithStickyNavbar_LWe7" id="upload-your-app">Upload Your App<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#upload-your-app" class="hash-link" aria-label="Direct link to Upload Your App" title="Direct link to Upload Your App" translate="no">​</a></h3>
+<ul>
+<li>Clone from GitHub</li>
+</ul>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">git clone https://github.com/yourusername/your-frontend-repo.git</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">cd your-frontend-repo</span><br></span></code></pre></div></div>
+<ul>
+<li>Upload via SCP (from local machine)</li>
+</ul>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">scp -i my-key.pem -r ./dist ec2-user@&lt;your-ec2-ip&gt;:/home/ec2-user</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="build-your-app">Build Your App<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#build-your-app" class="hash-link" aria-label="Direct link to Build Your App" title="Direct link to Build Your App" translate="no">​</a></h2>
+<p>If your app is not yet built:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">npm install</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">npm run build</span><br></span></code></pre></div></div>
+<p>This will create a dist/ or build/ folder with static files.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="configure-nginx">Configure Nginx<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#configure-nginx" class="hash-link" aria-label="Direct link to Configure Nginx" title="Direct link to Configure Nginx" translate="no">​</a></h2>
+<p>Open the Nginx config file:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">sudo nano /etc/nginx/sites-available/default</span><br></span></code></pre></div></div>
+<p>Replace its contents with:</p>
+<div class="language-nginx codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-nginx codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">server {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  listen 80;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  server_name _;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  root /home/ec2-user/your-frontend-repo/dist; # or build for CRA</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  index index.html;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  location / {</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">    try_files $uri /index.html;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">  }</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">}</span><br></span></code></pre></div></div>
+<p>Test and reload Nginx:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">sudo nginx -t</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo systemctl reload nginx</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo systemctl enable nginx</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="adjust-file-permissions">Adjust File Permissions<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#adjust-file-permissions" class="hash-link" aria-label="Direct link to Adjust File Permissions" title="Direct link to Adjust File Permissions" translate="no">​</a></h2>
+<p>Make sure your app directory is accessible:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">sudo chown -R www-data:www-data /home/ec2-user/your-frontend-repo</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo chmod -R 755 /home/ec2-user/your-frontend-repo</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="access-your-app">Access Your App<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#access-your-app" class="hash-link" aria-label="Direct link to Access Your App" title="Direct link to Access Your App" translate="no">​</a></h2>
+<p>Open your browser and go to:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">http://&lt;your-ec2-public-ip&gt;</span><br></span></code></pre></div></div>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="optional-add-ssl-with-lets-encrypt">(Optional) Add SSL with Let’s Encrypt<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/deploy#optional-add-ssl-with-lets-encrypt" class="hash-link" aria-label="Direct link to (Optional) Add SSL with Let’s Encrypt" title="Direct link to (Optional) Add SSL with Let’s Encrypt" translate="no">​</a></h2>
+<p>Install Certbot to enable HTTPS:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">sudo apt install -y certbot python3-certbot-nginx</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com</span><br></span></code></pre></div></div>]]></content:encoded>
+            <category>deploy</category>
+            <category>aws</category>
+            <category>nginx</category>
+        </item>
+        <item>
+            <title><![CDATA[How to be happy?]]></title>
+            <link>https://andreyroztorguev.github.io/outscalelab-blog/blog/health</link>
+            <guid>https://andreyroztorguev.github.io/outscalelab-blog/blog/health</guid>
+            <pubDate>Mon, 06 Oct 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[How to Be Happy: A Guide to Everyday Joy]]></description>
+            <content:encoded><![CDATA[<h2 class="anchor anchorWithStickyNavbar_LWe7" id="how-to-be-happy-a-guide-to-everyday-joy">How to Be Happy: A Guide to Everyday Joy<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/health#how-to-be-happy-a-guide-to-everyday-joy" class="hash-link" aria-label="Direct link to How to Be Happy: A Guide to Everyday Joy" title="Direct link to How to Be Happy: A Guide to Everyday Joy" translate="no">​</a></h2>
+<p>Happiness isn’t a destination — it’s a way of living. While life will always have ups and downs, you can train your mind and habits to experience more peace, meaning, and joy each day.</p>
+<p>This guide explores small, practical ways to build genuine happiness from the inside out.</p>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="practice-gratitude-daily">Practice Gratitude Daily<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/health#practice-gratitude-daily" class="hash-link" aria-label="Direct link to Practice Gratitude Daily" title="Direct link to Practice Gratitude Daily" translate="no">​</a></h2>
+<p>Happiness often begins with perspective.
+When you focus on what’s missing, you feel scarcity. When you focus on what’s present, you feel abundance.</p>
+<p>Try this simple habit:</p>
+<ul>
+<li>Even a warm meal, a kind word, or a good song counts. Over time, gratitude rewires your brain toward optimism.</li>
+</ul>
+<h2 class="anchor anchorWithStickyNavbar_LWe7" id="build-real-connections">Build Real Connections<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/health#build-real-connections" class="hash-link" aria-label="Direct link to Build Real Connections" title="Direct link to Build Real Connections" translate="no">​</a></h2>
+<p>Humans are social by nature. Deep relationships give us belonging and emotional safety — two major ingredients for happiness.</p>
+<ul>
+<li>Spend time with people who make you feel supported</li>
+<li>Listen more than you talk</li>
+<li>Be kind without expecting anything back</li>
+</ul>
+<p>Real happiness grows through meaningful connections, not the number of followers or likes.</p>
+<p><img decoding="async" loading="lazy" src="https://media-cdn.seeken.org/seeken.org/wp-content/uploads/2022/11/what-is-happiness.jpg" alt="happiness" class="img_ev3q"></p>]]></content:encoded>
+            <category>health</category>
+        </item>
+        <item>
+            <title><![CDATA[How to be good father]]></title>
+            <link>https://andreyroztorguev.github.io/outscalelab-blog/blog/father</link>
+            <guid>https://andreyroztorguev.github.io/outscalelab-blog/blog/father</guid>
+            <pubDate>Sun, 05 Oct 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[How to be good father?]]></description>
+            <content:encoded><![CDATA[<h2 class="anchor anchorWithStickyNavbar_LWe7" id="how-to-be-good-father">How to be good father?<a href="https://andreyroztorguev.github.io/outscalelab-blog/blog/father#how-to-be-good-father" class="hash-link" aria-label="Direct link to How to be good father?" title="Direct link to How to be good father?" translate="no">​</a></h2>
+<p><img decoding="async" loading="lazy" alt="basil" src="https://andreyroztorguev.github.io/outscalelab-blog/assets/images/basil-f2ea6b30101fe013417627447f1c6d94.jpg" width="1280" height="720" class="img_ev3q"></p>]]></content:encoded>
+            <category>father</category>
+            <category>kindness</category>
+            <category>wisdom</category>
+        </item>
+        <item>
+            <title><![CDATA[Welcome]]></title>
+            <link>https://andreyroztorguev.github.io/outscalelab-blog/blog/welcome</link>
+            <guid>https://andreyroztorguev.github.io/outscalelab-blog/blog/welcome</guid>
+            <pubDate>Thu, 26 Aug 2021 00:00:00 GMT</pubDate>
+            <description><![CDATA[Docusaurus blogging features are powered by the blog plugin.]]></description>
+            <content:encoded><![CDATA[<p><a href="https://docusaurus.io/docs/blog" target="_blank" rel="noopener noreferrer">Docusaurus blogging features</a> are powered by the <a href="https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-blog" target="_blank" rel="noopener noreferrer">blog plugin</a>.</p>
+<p>Here are a few tips you might find useful.</p>
+<p>Simply add Markdown files (or folders) to the <code>blog</code> directory.</p>
+<p>Regular blog authors can be added to <code>authors.yml</code>.</p>
+<p>The blog post date can be extracted from filenames, such as:</p>
+<ul>
+<li><code>2019-05-30-welcome.md</code></li>
+<li><code>2019-05-30-welcome/index.md</code></li>
+</ul>
+<p>A blog post folder can be convenient to co-locate blog post images:</p>
+<p><img decoding="async" loading="lazy" alt="Docusaurus Plushie" src="https://andreyroztorguev.github.io/outscalelab-blog/assets/images/docusaurus-plushie-banner-a60f7593abca1e3eef26a9afa244e4fb.jpeg" width="1500" height="500" class="img_ev3q"></p>
+<p>The blog supports tags as well!</p>
+<p><strong>And if you don't want a blog</strong>: just delete this directory, and use <code>blog: false</code> in your Docusaurus config.</p>]]></content:encoded>
+            <category>Facebook</category>
+            <category>Hello</category>
+            <category>Docusaurus</category>
+        </item>
+        <item>
+            <title><![CDATA[MDX Blog Post]]></title>
+            <link>https://andreyroztorguev.github.io/outscalelab-blog/blog/mdx-blog-post</link>
+            <guid>https://andreyroztorguev.github.io/outscalelab-blog/blog/mdx-blog-post</guid>
+            <pubDate>Sun, 01 Aug 2021 00:00:00 GMT</pubDate>
+            <description><![CDATA[Blog posts support Docusaurus Markdown features, such as MDX.]]></description>
+            <content:encoded><![CDATA[<p>Blog posts support <a href="https://docusaurus.io/docs/markdown-features" target="_blank" rel="noopener noreferrer">Docusaurus Markdown features</a>, such as <a href="https://mdxjs.com/" target="_blank" rel="noopener noreferrer">MDX</a>.</p>
+<div class="theme-admonition theme-admonition-tip admonition_xJq3 alert alert--success"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 12 16"><path fill-rule="evenodd" d="M6.5 0C3.48 0 1 2.19 1 5c0 .92.55 2.25 1 3 1.34 2.25 1.78 2.78 2 4v1h5v-1c.22-1.22.66-1.75 2-4 .45-.75 1-2.08 1-3 0-2.81-2.48-5-5.5-5zm3.64 7.48c-.25.44-.47.8-.67 1.11-.86 1.41-1.25 2.06-1.45 3.23-.02.05-.02.11-.02.17H5c0-.06 0-.13-.02-.17-.2-1.17-.59-1.83-1.45-3.23-.2-.31-.42-.67-.67-1.11C2.44 6.78 2 5.65 2 5c0-2.2 2.02-4 4.5-4 1.22 0 2.36.42 3.22 1.19C10.55 2.94 11 3.94 11 5c0 .66-.44 1.78-.86 2.48zM4 14h5c-.23 1.14-1.3 2-2.5 2s-2.27-.86-2.5-2z"></path></svg></span>tip</div><div class="admonitionContent_BuS1"><p>Use the power of React to create interactive blog posts.</p></div></div>
+<!-- -->
+<p>For example, use JSX to create an interactive button:</p>
+<div class="language-js codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-js codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token operator" style="color:#393A34">&lt;</span><span class="token plain">button onClick</span><span class="token operator" style="color:#393A34">=</span><span class="token punctuation" style="color:#393A34">{</span><span class="token punctuation" style="color:#393A34">(</span><span class="token punctuation" style="color:#393A34">)</span><span class="token plain"> </span><span class="token arrow operator" style="color:#393A34">=&gt;</span><span class="token plain"> </span><span class="token function" style="color:#d73a49">alert</span><span class="token punctuation" style="color:#393A34">(</span><span class="token string" style="color:#e3116c">'button clicked!'</span><span class="token punctuation" style="color:#393A34">)</span><span class="token punctuation" style="color:#393A34">}</span><span class="token operator" style="color:#393A34">&gt;</span><span class="token maybe-class-name">Click</span><span class="token plain"> me</span><span class="token operator" style="color:#393A34">!</span><span class="token operator" style="color:#393A34">&lt;</span><span class="token operator" style="color:#393A34">/</span><span class="token plain">button</span><span class="token operator" style="color:#393A34">&gt;</span><br></span></code></pre></div></div>
+<button>Click me!</button>]]></content:encoded>
+            <category>Docusaurus</category>
+        </item>
+        <item>
+            <title><![CDATA[Long Blog Post]]></title>
+            <link>https://andreyroztorguev.github.io/outscalelab-blog/blog/long-blog-post</link>
+            <guid>https://andreyroztorguev.github.io/outscalelab-blog/blog/long-blog-post</guid>
+            <pubDate>Wed, 29 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[This is the summary of a very long blog post,]]></description>
+            <content:encoded><![CDATA[<p>This is the summary of a very long blog post,</p>
+<p>Use a <code>&lt;!--</code> <code>truncate</code> <code>--&gt;</code> comment to limit blog post size in the list view.</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit amet</p>]]></content:encoded>
+            <category>Hello</category>
+            <category>Docusaurus</category>
+        </item>
+        <item>
+            <title><![CDATA[First Blog Post]]></title>
+            <link>https://andreyroztorguev.github.io/outscalelab-blog/blog/first-blog-post</link>
+            <guid>https://andreyroztorguev.github.io/outscalelab-blog/blog/first-blog-post</guid>
+            <pubDate>Tue, 28 May 2019 00:00:00 GMT</pubDate>
+            <description><![CDATA[Lorem ipsum dolor sit amet...]]></description>
+            <content:encoded><![CDATA[<p>Lorem ipsum dolor sit amet...</p>
+<p>...consectetur adipiscing elit. Pellentesque elementum dignissim ultricies. Fusce rhoncus ipsum tempor eros aliquam consequat. Lorem ipsum dolor sit ametewf</p>]]></content:encoded>
+            <category>Hola</category>
+            <category>Docusaurus</category>
+        </item>
+    </channel>
+</rss>
